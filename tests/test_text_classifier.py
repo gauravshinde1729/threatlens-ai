@@ -91,7 +91,9 @@ def test_predict_single_description(classifier):
 def test_predict_obvious_injection(classifier):
     """A clear SQL injection description is predicted as 'injection'."""
     # Trained on injection examples — should confidently classify this
-    result = classifier.predict(["SQL injection allows executing arbitrary SQL commands in the database."])
+    result = classifier.predict(
+        ["SQL injection allows executing arbitrary SQL commands in the database."]
+    )
     assert result[0] == "injection"
 
 
@@ -127,8 +129,7 @@ def test_predict_proba_argmax_matches_predict(classifier):
     for i, (p, pred) in enumerate(zip(proba, preds, strict=True)):
         expected_idx = CATEGORIES.index(pred)
         assert np.argmax(p) == expected_idx, (
-            f"Row {i}: argmax={np.argmax(p)} ({CATEGORIES[np.argmax(p)]!r}) "
-            f"vs predict={pred!r}"
+            f"Row {i}: argmax={np.argmax(p)} ({CATEGORIES[np.argmax(p)]!r}) vs predict={pred!r}"
         )
 
 
@@ -169,10 +170,12 @@ def test_get_embeddings_are_deterministic(classifier):
 
 def test_get_embeddings_differ_across_descriptions(classifier):
     """Different descriptions produce different embeddings."""
-    emb = classifier.get_embeddings([
-        "SQL injection vulnerability.",
-        "Buffer overflow in memory parser.",
-    ])
+    emb = classifier.get_embeddings(
+        [
+            "SQL injection vulnerability.",
+            "Buffer overflow in memory parser.",
+        ]
+    )
     assert not np.allclose(emb[0], emb[1])
 
 

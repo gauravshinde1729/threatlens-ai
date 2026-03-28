@@ -20,7 +20,11 @@ def _make_mock_predictor():
         "shap_values": np.zeros((1, 30)),
         "feature_names": [f"f{i}" for i in range(30)],
         "top_3_positive": [("has_exploit_ref", 0.31), ("cvss_v3_score", 0.18), ("cwe_787", 0.09)],
-        "top_3_negative": [("user_interaction", -0.12), ("attack_complexity", -0.07), ("scope", -0.03)],
+        "top_3_negative": [
+            ("user_interaction", -0.12),
+            ("attack_complexity", -0.07),
+            ("scope", -0.03),
+        ],
     }
     return pred
 

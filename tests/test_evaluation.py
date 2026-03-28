@@ -266,6 +266,7 @@ def test_generate_report_model_metadata(fitted_rf, dataset):
     assert meta["n_features"] == _N_FEATURES
     # Timestamp should be a valid ISO 8601 string
     from datetime import datetime
+
     datetime.fromisoformat(meta["timestamp"])  # raises if invalid
 
 

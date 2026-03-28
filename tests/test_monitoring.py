@@ -101,14 +101,18 @@ def test_drift_detector_ignores_non_numeric_columns(detector_with_reference):
     assert "cve_id" not in result
 
 
-@pytest.mark.parametrize("psi,expected_status", [
-    (0.05, "no_drift"),
-    (0.15, "moderate"),
-    (0.30, "significant"),
-])
+@pytest.mark.parametrize(
+    "psi,expected_status",
+    [
+        (0.05, "no_drift"),
+        (0.15, "moderate"),
+        (0.30, "significant"),
+    ],
+)
 def test_psi_status_thresholds(psi, expected_status):
     """PSI thresholds map to correct status strings."""
     from monitoring.drift_detector import _psi_status
+
     assert _psi_status(psi) == expected_status
 
 
@@ -185,12 +189,8 @@ def test_performance_tracker_empty_window(tracker):
 
 def test_performance_tracker_error_rate(tracker):
     """error_rate reflects proportion of predictions that have an error field."""
-    tracker.log_prediction(
-        "CVE-A", {"risk_level": "HIGH", "error": "timeout"}, latency_ms=5.0
-    )
-    tracker.log_prediction(
-        "CVE-B", {"risk_level": "LOW"}, latency_ms=5.0
-    )
+    tracker.log_prediction("CVE-A", {"risk_level": "HIGH", "error": "timeout"}, latency_ms=5.0)
+    tracker.log_prediction("CVE-B", {"risk_level": "LOW"}, latency_ms=5.0)
     metrics = tracker.get_metrics(last_n_hours=24)
     assert metrics["error_rate"] == pytest.approx(0.5)
 

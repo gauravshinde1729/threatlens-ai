@@ -210,9 +210,7 @@ def test_cwe_one_hot_encoding(preprocessor):
         (False, [], False),
     ],
 )
-def test_is_exploited_target_variable_logic(
-    preprocessor, has_exploit_ref, references, expected
-):
+def test_is_exploited_target_variable_logic(preprocessor, has_exploit_ref, references, expected):
     cve = _minimal_cve(has_exploit_ref=has_exploit_ref, references=references)
     df = preprocessor.transform([cve])
     assert df.iloc[0]["is_exploited"] == int(expected)
@@ -220,7 +218,9 @@ def test_is_exploited_target_variable_logic(
 
 def test_is_exploited_via_compute_helper():
     """_compute_is_exploited is consistent with the DataFrame column."""
-    cve_kev = _minimal_cve(references=["https://www.cisa.gov/known-exploited-vulnerabilities-catalog"])
+    cve_kev = _minimal_cve(
+        references=["https://www.cisa.gov/known-exploited-vulnerabilities-catalog"]
+    )
     assert _compute_is_exploited(cve_kev) is True
 
     cve_clean = _minimal_cve(references=["https://example.com/advisory"])
@@ -247,14 +247,14 @@ def test_ordinal_encoding_of_cvss_components(preprocessor):
     df = preprocessor.transform([cve])
     row = df.iloc[0]
 
-    assert row["attack_vector"] == 3        # NETWORK is highest
-    assert row["attack_complexity"] == 1    # LOW (less complex = higher risk)
+    assert row["attack_vector"] == 3  # NETWORK is highest
+    assert row["attack_complexity"] == 1  # LOW (less complex = higher risk)
     assert row["privileges_required"] == 2  # NONE = most permissive
-    assert row["user_interaction"] == 1     # NONE = no interaction needed
-    assert row["scope"] == 1               # CHANGED
+    assert row["user_interaction"] == 1  # NONE = no interaction needed
+    assert row["scope"] == 1  # CHANGED
     assert row["confidentiality_impact"] == 2  # HIGH
-    assert row["integrity_impact"] == 1        # LOW
-    assert row["availability_impact"] == 0     # NONE
+    assert row["integrity_impact"] == 1  # LOW
+    assert row["availability_impact"] == 0  # NONE
 
 
 def test_ordinal_encoding_unknown_values(preprocessor):

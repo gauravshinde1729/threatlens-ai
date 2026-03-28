@@ -249,8 +249,13 @@ Enable enhanced logging for 30 days post-patch.
     assert result["model"] is not None
 
     playbook = result["playbook"]
-    for section in ("Executive Summary", "Risk Assessment", "Immediate Actions",
-                    "Detection Rules", "Monitoring Recommendations"):
+    for section in (
+        "Executive Summary",
+        "Risk Assessment",
+        "Immediate Actions",
+        "Detection Rules",
+        "Monitoring Recommendations",
+    ):
         assert section in playbook, f"Missing section: {section}"
 
 
@@ -265,6 +270,7 @@ def test_playbook_generator_raises_without_api_key():
     with patch.dict("os.environ", {}, clear=True):
         # Remove GROQ_API_KEY if present
         import os
+
         os.environ.pop("GROQ_API_KEY", None)
         with pytest.raises(EnvironmentError, match="GROQ_API_KEY"):
             PlaybookGenerator(mock_retriever)

@@ -11,7 +11,9 @@ from models.cve_clusterer import CVEClusterer
 # ---------------------------------------------------------------------------
 
 
-def _make_clusterable_df(n_per_cluster: int = 30, n_clusters: int = 3, seed: int = 0) -> pd.DataFrame:
+def _make_clusterable_df(
+    n_per_cluster: int = 30, n_clusters: int = 3, seed: int = 0
+) -> pd.DataFrame:
     """Build a DataFrame with clear cluster structure."""
     rng = np.random.default_rng(seed)
     frames = []
