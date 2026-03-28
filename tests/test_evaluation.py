@@ -1,6 +1,7 @@
 """Tests for src/evaluation/explainability.py and src/evaluation/metrics.py."""
 
 import matplotlib
+
 matplotlib.use("Agg")  # non-interactive backend — no display/Tk required
 
 import numpy as np
