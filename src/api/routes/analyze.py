@@ -1,10 +1,8 @@
 """POST /analyze — full pipeline: NVD fetch → ML predict → RAG playbook."""
 
 import logging
-import re
 import time
 
-import pandas as pd
 from fastapi import APIRouter, HTTPException
 
 from api.dependencies import app_state
@@ -17,7 +15,7 @@ from api.schemas import (
     SeverityResponse,
     ShapExplanation,
 )
-from data.preprocessor import CVEPreprocessor, _REQUIRED_COLUMNS
+from data.preprocessor import _REQUIRED_COLUMNS, CVEPreprocessor
 from rag.playbook_generator import PlaybookGenerator
 
 router = APIRouter()
@@ -92,7 +90,7 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
         result = generator.generate(cve_data, ml_prediction, docs)
         sections = _parse_sections(result["playbook"])
         sources = result["sources"]
-    except EnvironmentError as exc:
+    except OSError as exc:
         # GROQ_API_KEY not set — return empty playbook rather than crashing
         logger.warning("Playbook generation skipped: %s", exc)
         sections = {"error": "GROQ_API_KEY not configured — playbook unavailable"}

@@ -86,7 +86,7 @@ class CVETextClassifier:
         logger.info("Encoding %d descriptions with %s", len(descriptions), self._encoder)
         embeddings = self._encode_batch(descriptions)
 
-        y = torch.tensor([self._label2idx[l] for l in labels], dtype=torch.long)
+        y = torch.tensor([self._label2idx[lbl] for lbl in labels], dtype=torch.long)
         X = torch.tensor(embeddings, dtype=torch.float32)
 
         optimizer = torch.optim.Adam(self._head.parameters(), lr=lr)

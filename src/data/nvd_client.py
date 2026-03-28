@@ -3,7 +3,7 @@
 import logging
 import time
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -20,7 +20,9 @@ MAX_RETRIES = 3
 class NVDRateLimiter:
     """Sliding-window rate limiter: max 5 requests per 30 seconds."""
 
-    def __init__(self, max_requests: int = MAX_REQUESTS, window: float = RATE_WINDOW_SECONDS) -> None:
+    def __init__(
+        self, max_requests: int = MAX_REQUESTS, window: float = RATE_WINDOW_SECONDS
+    ) -> None:
         self._max_requests = max_requests
         self._window = window
         self._timestamps: deque[float] = deque()
@@ -59,7 +61,7 @@ class NVDClient:
         Returns:
             List of parsed CVE dicts.
         """
-        end_dt = datetime.now(tz=timezone.utc)
+        end_dt = datetime.now(tz=UTC)
         start_dt = end_dt - timedelta(days=days_back)
         start_iso = start_dt.strftime("%Y-%m-%dT%H:%M:%S.000")
         end_iso = end_dt.strftime("%Y-%m-%dT%H:%M:%S.000")

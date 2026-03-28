@@ -50,7 +50,7 @@ async def generate_playbook(request: PlaybookRequest) -> PlaybookResponse:
 
     try:
         generator = PlaybookGenerator(app_state.retriever)
-    except EnvironmentError as exc:
+    except OSError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     ml_placeholder = {

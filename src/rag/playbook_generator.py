@@ -25,7 +25,7 @@ class PlaybookGenerator:
         self._retriever = retriever
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
-            raise EnvironmentError(
+            raise OSError(
                 "GROQ_API_KEY environment variable is not set. "
                 "Set it in your .env file or shell environment."
             )

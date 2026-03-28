@@ -85,7 +85,9 @@ class SeverityPredictor:
             )
 
         self._feature_names = list(X.columns)
-        logger.info("Fitting SeverityPredictor on %d samples, %d features", len(X), len(self._feature_names))
+        logger.info(
+            "Fitting SeverityPredictor on %d samples, %d features", len(X), len(self._feature_names)
+        )
 
         cv = StratifiedKFold(n_splits=self._n_splits, shuffle=self._cv_shuffle, random_state=42)
         self.cv_scores_ = cross_val_score(self._model, X, y, cv=cv, scoring="accuracy")
@@ -137,13 +139,10 @@ class SeverityPredictor:
         raw = explainer.shap_values(X)
 
         # Normalise shape: older SHAP returns list [cls0, cls1]; newer returns 3-D array
-        if isinstance(raw, list):
-            values_cls1 = np.array(raw[1])          # (n_samples, n_features)
-        else:
-            values_cls1 = raw[:, :, 1]              # (n_samples, n_features, n_classes)
+        values_cls1 = np.array(raw[1]) if isinstance(raw, list) else raw[:, :, 1]
 
         feature_names = list(X.columns)
-        mean_shap = values_cls1.mean(axis=0)        # (n_features,)
+        mean_shap = values_cls1.mean(axis=0)  # (n_features,)
 
         # Top 3 features pushing toward exploitation (highest positive mean SHAP)
         pos_idx = np.argsort(mean_shap)[::-1][:3]

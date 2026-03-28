@@ -3,14 +3,13 @@
 import logging
 import time
 
-import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 
 from api.dependencies import app_state
 from api.schemas import PredictRequest, SeverityResponse, ShapExplanation
 from data.nvd_client import NVDClient
-from data.preprocessor import CVEPreprocessor, _REQUIRED_COLUMNS
+from data.preprocessor import _REQUIRED_COLUMNS, CVEPreprocessor
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

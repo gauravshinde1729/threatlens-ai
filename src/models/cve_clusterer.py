@@ -52,9 +52,7 @@ class CVEClusterer:
         logger.info("Found %d clusters, %d noise points", n_clusters, n_noise)
         return labels
 
-    def get_cluster_summary(
-        self, X: pd.DataFrame, labels: np.ndarray
-    ) -> list[dict]:
+    def get_cluster_summary(self, X: pd.DataFrame, labels: np.ndarray) -> list[dict]:
         """Summarise each cluster with statistics and representative members.
 
         Args:

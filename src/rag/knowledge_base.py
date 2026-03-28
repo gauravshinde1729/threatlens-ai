@@ -112,7 +112,7 @@ class KnowledgeBase:
         distances, indices = self._index.search(q_emb, k)
 
         results = []
-        for dist, idx in zip(distances[0], indices[0]):
+        for dist, idx in zip(distances[0], indices[0], strict=False):
             if idx == -1:
                 continue
             results.append(

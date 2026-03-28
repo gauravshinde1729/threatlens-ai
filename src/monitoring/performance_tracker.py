@@ -3,13 +3,15 @@
 import json
 import logging
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_METRICS_PATH = Path(__file__).resolve().parents[2] / "data" / "metrics" / "predictions.json"
+_DEFAULT_METRICS_PATH = (
+    Path(__file__).resolve().parents[2] / "data" / "metrics" / "predictions.json"
+)
 
 _RISK_LEVELS = ("HIGH", "MEDIUM", "LOW")
 
@@ -43,7 +45,7 @@ class PerformanceTracker:
             latency_ms: Request latency in milliseconds.
             timestamp: Event timestamp (defaults to now UTC).
         """
-        ts = (timestamp or datetime.now(tz=timezone.utc)).isoformat()
+        ts = (timestamp or datetime.now(tz=UTC)).isoformat()
         record = {
             "cve_id": cve_id,
             "exploit_probability": prediction.get("exploit_probability"),
@@ -68,14 +70,11 @@ class PerformanceTracker:
             Dict with total_predictions, avg_latency_ms, error_rate,
             and prediction_distribution (counts per risk level).
         """
-        cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=last_n_hours)
+        cutoff = datetime.now(tz=UTC) - timedelta(hours=last_n_hours)
         with self._lock:
             records = self._read_records()
 
-        window = [
-            r for r in records
-            if _parse_ts(r.get("timestamp")) >= cutoff
-        ]
+        window = [r for r in records if _parse_ts(r.get("timestamp")) >= cutoff]
 
         total = len(window)
         if total == 0:
@@ -120,9 +119,9 @@ class PerformanceTracker:
 
 def _parse_ts(ts_str: str | None) -> datetime:
     if ts_str is None:
-        return datetime.min.replace(tzinfo=timezone.utc)
+        return datetime.min.replace(tzinfo=UTC)
     try:
         dt = datetime.fromisoformat(ts_str)
-        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
     except (ValueError, TypeError):
-        return datetime.min.replace(tzinfo=timezone.utc)
+        return datetime.min.replace(tzinfo=UTC)

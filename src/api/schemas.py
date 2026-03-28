@@ -4,7 +4,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Request schemas
 # ---------------------------------------------------------------------------
@@ -53,9 +52,7 @@ class SeverityResponse(BaseModel):
 
 class PlaybookResponse(BaseModel):
     cve_id: str
-    playbook: dict[str, str] = Field(
-        description="Playbook sections keyed by section name"
-    )
+    playbook: dict[str, str] = Field(description="Playbook sections keyed by section name")
     sources: list[str] = Field(description="Knowledge base source files used")
 
 

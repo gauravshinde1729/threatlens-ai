@@ -45,7 +45,7 @@ def explain_prediction(
     #   - list [cls0, cls1]  → older scikit-learn / shap versions
     #   - 3-D array (n, f, c) → newer shap
     if isinstance(raw, list):
-        values = np.array(raw[1])       # class-1 slice
+        values = np.array(raw[1])  # class-1 slice
     elif isinstance(raw, np.ndarray) and raw.ndim == 3:
         values = raw[:, :, 1]
     else:
@@ -55,19 +55,13 @@ def explain_prediction(
     if values.ndim == 1:
         values = values[np.newaxis, :]
 
-    mean_shap = values.mean(axis=0)     # (n_features,)
+    mean_shap = values.mean(axis=0)  # (n_features,)
 
     sorted_desc = np.argsort(mean_shap)[::-1]
-    top_3_positive = [
-        (feature_names[i], float(mean_shap[i]))
-        for i in sorted_desc[:3]
-    ]
+    top_3_positive = [(feature_names[i], float(mean_shap[i])) for i in sorted_desc[:3]]
 
     sorted_asc = np.argsort(mean_shap)
-    top_3_negative = [
-        (feature_names[i], float(mean_shap[i]))
-        for i in sorted_asc[:3]
-    ]
+    top_3_negative = [(feature_names[i], float(mean_shap[i])) for i in sorted_asc[:3]]
 
     logger.debug(
         "SHAP explain: %d samples, top+ %s, top- %s",

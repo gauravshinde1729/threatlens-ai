@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -150,7 +150,10 @@ class CVEPreprocessor:
             "integrity_impact": _encode(cve, "integrity_impact", _IMPACT_ORD),
             "availability_impact": _encode(cve, "availability_impact", _IMPACT_ORD),
             # Boolean keyword flags
-            **{name: int(pat.search(description) is not None) for name, pat in _KEYWORD_PATTERNS.items()},
+            **{
+                name: int(pat.search(description) is not None)
+                for name, pat in _KEYWORD_PATTERNS.items()
+            },
             # Exploit reference flag (already parsed by NVDClient)
             "has_exploit_ref": int(bool(cve.get("has_exploit_ref", False))),
             # CWE one-hot columns
@@ -191,8 +194,8 @@ def _days_since(date_str: str | None) -> int:
     try:
         # NVD dates: "2024-02-09T00:00:00.000" — no timezone suffix
         pub = datetime.fromisoformat(date_str.rstrip("Z").split(".")[0])
-        pub = pub.replace(tzinfo=timezone.utc)
-        delta = datetime.now(tz=timezone.utc) - pub
+        pub = pub.replace(tzinfo=UTC)
+        delta = datetime.now(tz=UTC) - pub
         return max(0, delta.days)
     except (ValueError, TypeError):
         return 0

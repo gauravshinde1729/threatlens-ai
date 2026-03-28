@@ -1,7 +1,7 @@
 """Model evaluation metrics and report generation for CVE exploit prediction."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
@@ -52,10 +52,7 @@ def evaluate_model(
         )
         roc_auc = None
     else:
-        if hasattr(model, "predict_proba"):
-            y_score = model.predict_proba(X_test)[:, 1]
-        else:
-            y_score = y_pred
+        y_score = model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba") else y_pred
         roc_auc = float(roc_auc_score(y_arr, y_score))
 
     cm = confusion_matrix(y_arr, y_pred)
@@ -111,7 +108,7 @@ def generate_report(
         "metrics": metrics,
         "explainability": explainability,
         "model_metadata": {
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
             "n_train_samples": n_train_samples,
             "n_features": len(feature_names),
         },

@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse
 
 load_dotenv()
 
-from api.dependencies import app_state
-from api.routes import analyze, playbook, predict
-from api.schemas import ErrorResponse, HealthResponse
+from api.dependencies import app_state  # noqa: E402
+from api.routes import analyze, playbook, predict  # noqa: E402
+from api.schemas import ErrorResponse, HealthResponse  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -37,7 +37,6 @@ async def lifespan(app: FastAPI):
 def _load_model() -> None:
     try:
         from models.model_registry import ModelRegistry
-        from models.severity_predictor import SeverityPredictor
 
         registry = ModelRegistry()
         versions = registry.list_versions("severity_predictor")
