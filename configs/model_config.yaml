@@ -1,46 +1,23 @@
 # ML model hyperparameters and training configuration
 # All model parameters must be sourced from this file — no hardcoding in src/
 
-xgboost:
-  n_estimators: 300
-  max_depth: 6
-  learning_rate: 0.05
-  subsample: 0.8
-  colsample_bytree: 0.8
-  use_label_encoder: false
-  eval_metric: "logloss"
-  random_state: 42
-
 random_forest:
-  n_estimators: 200
-  max_depth: 10
+  n_estimators: 100
+  max_depth: 15
   min_samples_split: 5
-  min_samples_leaf: 2
   random_state: 42
 
-ensemble:
-  xgboost_weight: 0.6
-  random_forest_weight: 0.4
-
-training:
-  test_size: 0.2
-  cv_folds: 5
+xgboost:
+  n_estimators: 100
+  max_depth: 6
+  learning_rate: 0.1
+  eval_metric: logloss
   random_state: 42
-  stratify: true
 
-features:
-  cvss_score: true
-  attack_vector: true
-  attack_complexity: true
-  privileges_required: true
-  user_interaction: true
-  scope: true
-  confidentiality_impact: true
-  integrity_impact: true
-  availability_impact: true
-  cwe_category: true
-  vendor_severity: true
+cross_validation:
+  n_splits: 5
+  shuffle: true
 
 model_registry:
-  path: "models/"
+  path: "data/models/"
   format: "joblib"

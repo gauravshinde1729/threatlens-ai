@@ -1,0 +1,161 @@
+[
+  {
+    "cve": {
+      "id": "CVE-2024-21762",
+      "published": "2024-02-09T00:00:00.000",
+      "lastModified": "2024-03-15T12:34:56.000",
+      "descriptions": [
+        {
+          "lang": "en",
+          "value": "A out-of-bounds write vulnerability in Fortinet FortiOS versions 7.4.0 through 7.4.2, 7.2.0 through 7.2.6, 7.0.0 through 7.0.13 allows a remote unauthenticated attacker to execute arbitrary code or command via specially crafted HTTP requests."
+        }
+      ],
+      "metrics": {
+        "cvssMetricV31": [
+          {
+            "cvssData": {
+              "baseScore": 9.8,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "attackVector": "NETWORK",
+              "attackComplexity": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteraction": "NONE",
+              "scope": "UNCHANGED",
+              "confidentialityImpact": "HIGH",
+              "integrityImpact": "HIGH",
+              "availabilityImpact": "HIGH"
+            }
+          }
+        ]
+      },
+      "weaknesses": [
+        {
+          "description": [
+            { "lang": "en", "value": "CWE-787" }
+          ]
+        }
+      ],
+      "references": [
+        { "url": "https://www.fortiguard.com/psirt/FG-IR-24-015" },
+        { "url": "https://github.com/watchtowrlabs/fortios-rce-poc" },
+        { "url": "https://www.exploit-db.com/exploits/51999" }
+      ],
+      "configurations": [
+        {
+          "nodes": [
+            {
+              "cpeMatch": [
+                {
+                  "vulnerable": true,
+                  "criteria": "cpe:2.3:o:fortinet:fortios:7.4.0:*:*:*:*:*:*:*"
+                },
+                {
+                  "vulnerable": true,
+                  "criteria": "cpe:2.3:o:fortinet:fortios:7.4.1:*:*:*:*:*:*:*"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "cve": {
+      "id": "CVE-2024-38819",
+      "published": "2024-11-18T00:00:00.000",
+      "lastModified": "2024-12-01T09:00:00.000",
+      "descriptions": [
+        {
+          "lang": "en",
+          "value": "Applications serving static resources through the functional web frameworks WebMvc.fn or WebFlux.fn are vulnerable to path traversal attacks. An attacker can craft malicious HTTP requests and obtain any file on the file system that is accessible to the process in which the Spring application is running."
+        }
+      ],
+      "metrics": {
+        "cvssMetricV31": [
+          {
+            "cvssData": {
+              "baseScore": 5.3,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+              "attackVector": "NETWORK",
+              "attackComplexity": "LOW",
+              "privilegesRequired": "NONE",
+              "userInteraction": "NONE",
+              "scope": "UNCHANGED",
+              "confidentialityImpact": "LOW",
+              "integrityImpact": "NONE",
+              "availabilityImpact": "NONE"
+            }
+          }
+        ]
+      },
+      "weaknesses": [
+        {
+          "description": [
+            { "lang": "en", "value": "CWE-22" }
+          ]
+        }
+      ],
+      "references": [
+        { "url": "https://spring.io/security/cve-2024-38819" },
+        { "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-38819" }
+      ],
+      "configurations": [
+        {
+          "nodes": [
+            {
+              "cpeMatch": [
+                {
+                  "vulnerable": true,
+                  "criteria": "cpe:2.3:a:vmware:spring_framework:6.1.0:*:*:*:*:*:*:*"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "cve": {
+      "id": "CVE-2024-45678",
+      "published": "2024-09-10T00:00:00.000",
+      "lastModified": "2024-09-20T11:22:33.000",
+      "descriptions": [
+        {
+          "lang": "en",
+          "value": "An information disclosure vulnerability in the debug endpoint of Acme WebServer 3.x before 3.2.1 allows an unauthenticated attacker to read the application version and environment name via a crafted GET request to /debug/info."
+        }
+      ],
+      "metrics": {},
+      "weaknesses": [
+        {
+          "description": [
+            { "lang": "en", "value": "CWE-200" }
+          ]
+        }
+      ],
+      "references": [
+        { "url": "https://acme-security.example.com/advisories/2024-001" }
+      ],
+      "configurations": [
+        {
+          "nodes": [
+            {
+              "cpeMatch": [
+                {
+                  "vulnerable": true,
+                  "criteria": "cpe:2.3:a:acme:webserver:3.0.0:*:*:*:*:*:*:*"
+                },
+                {
+                  "vulnerable": true,
+                  "criteria": "cpe:2.3:a:acme:webserver:3.1.0:*:*:*:*:*:*:*"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

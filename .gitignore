@@ -24,11 +24,11 @@ build/
 data/raw/
 data/processed/
 
-# Model artifacts
+# Model artifacts — ignore saved binaries but not source code
 *.joblib
 *.pkl
 *.pickle
-models/
+data/models/
 
 # Jupyter
 .ipynb_checkpoints/
