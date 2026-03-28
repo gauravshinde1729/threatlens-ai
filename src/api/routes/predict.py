@@ -73,20 +73,17 @@ async def predict(request: PredictRequest) -> SeverityResponse:
         exploit_probability=exploit_prob,
         risk_level=_risk_level(exploit_prob),
         shap_explanation=ShapExplanation(
-            top_positive_features=explanation["top_3_positive"],
-            top_negative_features=explanation["top_3_negative"],
+            top_positive_features=explanation["top_positive_features"],
+            top_negative_features=explanation["top_negative_features"],
         ),
     )
 
 
 def _fetch_single_cve(cve_id: str) -> dict:
-    """Fetch and return the first matching CVE dict from NVD."""
+    """Fetch and return the first matching CVE dict from NVD or local cache."""
     client = NVDClient()
-    # Use a narrow 1-day window trick: fetch by lastModified recent range;
-    # NVD 2.0 doesn't support filter by cve_id directly in basic requests,
-    # so we fetch recent CVEs and filter, or fall back to a wide window.
-    cves = client.fetch_cves(days_back=3650, max_results=500)
+    cves = client.fetch_cves(max_results=500)
     match = next((c for c in cves if c.get("cve_id") == cve_id), None)
     if not match:
-        raise HTTPException(status_code=404, detail=f"{cve_id} not found in NVD (last 10 years)")
+        raise HTTPException(status_code=404, detail=f"{cve_id} not found in cached CVE data")
     return match

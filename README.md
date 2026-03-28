@@ -42,7 +42,12 @@ ThreatLens AI is an end-to-end threat intelligence platform that ingests CVEs fr
 ```bash
 # 1. Clone and set up environment
 git clone https://github.com/your-org/threatlens-ai.git && cd threatlens-ai
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
 
 # 2. Install dependencies
 pip install -e ".[dev]"
@@ -50,42 +55,45 @@ pip install -e ".[dev]"
 # 3. Configure secrets
 echo "GROQ_API_KEY=your_key_here" > .env
 
-# 4. Build knowledge base index
-python -c "from rag.knowledge_base import KnowledgeBase; KnowledgeBase().build_index()"
+# 4. Train the model + build the FAISS index (one-time setup, ~5 mins)
+python scripts/train_pipeline.py
 
 # 5. Start the API
-uvicorn api.main:app --reload --port 8000
+python -m uvicorn src.api.main:app --port 8002
 ```
 
-API docs available at `http://localhost:8000/docs`
+API docs available at `http://localhost:8002/docs`
 
-> **Train the model first:** `/predict` and `/analyze` require a trained model saved to `data/models/`. Run your training pipeline (see `src/models/severity_predictor.py`) before using those endpoints.
+> **Note:** The server takes ~15 seconds to start — wait for `Application startup complete.` before sending requests.
 
 ---
 
 ## API Usage
 
-### Health Check
+All examples use port `8002`. Replace with your actual port if different.
+
+> **Windows users:** Run these in **PowerShell** (not CMD). The single-line format works on Windows, macOS, and Linux.
+
+---
+
+### 1. Health Check
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8002/health
 ```
+Expected response:
 ```json
-{"status": "ok", "model_loaded": true, "index_loaded": true, "version": "0.1.0"}
+{"status":"ok","model_loaded":true,"index_loaded":true,"version":"0.1.0"}
 ```
 
-### Full Analysis (ML prediction + RAG playbook)
-```bash
-curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"cve_id": "CVE-2024-21762"}'
-```
+---
 
-### ML Prediction Only
+### 2. POST /predict — ML exploit probability
+
+Fastest option — pass features directly, no network lookup required:
 ```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"cve_id": "CVE-2024-21762"}'
+curl -X POST http://localhost:8002/predict -H "Content-Type: application/json" -d "{\"cve_id\": \"CVE-2024-21762\", \"features\": {\"cvss_v3_score\": 9.8, \"attack_vector\": 3, \"attack_complexity\": 1, \"privileges_required\": 2, \"user_interaction\": 1, \"scope\": 0, \"confidentiality_impact\": 2, \"integrity_impact\": 2, \"availability_impact\": 2, \"description_length\": 180, \"reference_count\": 3, \"affected_product_count\": 2, \"days_since_publication\": 400, \"has_exploit_ref\": 1, \"has_keyword_rce\": 1, \"has_keyword_sqli\": 0, \"has_keyword_xss\": 0, \"has_keyword_auth_bypass\": 0, \"has_keyword_buffer_overflow\": 1, \"has_keyword_privilege_escalation\": 0, \"cwe_79\": 0, \"cwe_89\": 0, \"cwe_787\": 1, \"cwe_416\": 0, \"cwe_78\": 0, \"cwe_20\": 0, \"cwe_125\": 0, \"cwe_476\": 0, \"cwe_190\": 0, \"cwe_119\": 0, \"cwe_other\": 0}}"
 ```
+Expected response:
 ```json
 {
   "cve_id": "CVE-2024-21762",
@@ -99,17 +107,29 @@ curl -X POST http://localhost:8000/predict \
 }
 ```
 
-### RAG Playbook Generation
+Alternative — look up by CVE ID from local cache (no features needed):
 ```bash
-curl -X POST http://localhost:8000/playbook \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cve_id": "CVE-2024-21762",
-    "description": "Out-of-bounds write in FortiOS allows unauthenticated RCE",
-    "severity": "CRITICAL",
-    "cwe": "CWE-787"
-  }'
+curl -X POST http://localhost:8002/predict -H "Content-Type: application/json" -d "{\"cve_id\": \"CVE-2024-21762\"}"
 ```
+> Returns 404 if the CVE is not in `data/raw/cves_cache.json`.
+
+---
+
+### 3. POST /playbook — RAG remediation playbook
+
+```bash
+curl -X POST http://localhost:8002/playbook -H "Content-Type: application/json" -d "{\"cve_id\": \"CVE-2024-21762\", \"description\": \"Out-of-bounds write in FortiOS allows unauthenticated remote code execution via crafted HTTP requests\", \"severity\": \"CRITICAL\", \"cwe\": \"CWE-787\"}"
+```
+> Requires `GROQ_API_KEY` set in `.env`. Returns 503 without it.
+
+---
+
+### 4. POST /analyze — Full pipeline (predict + playbook)
+
+```bash
+curl -X POST http://localhost:8002/analyze -H "Content-Type: application/json" -d "{\"cve_id\": \"CVE-2024-21762\"}"
+```
+> Looks up the CVE from local cache then runs ML prediction + RAG playbook generation. Returns 404 if the CVE ID is not in `data/raw/cves_cache.json`.
 
 ---
 

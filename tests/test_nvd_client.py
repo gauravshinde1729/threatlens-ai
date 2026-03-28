@@ -45,14 +45,19 @@ def _mock_httpx_response(payload: dict, status_code: int = 200) -> MagicMock:
 
 
 def test_fetch_cves_returns_parsed_data(sample_cves):
-    """Parsed CVEs contain all expected fields with correct values."""
+    """Parsed CVEs contain all expected fields with correct values.
+
+    CVE-2024-45678 has no cvssMetricV31 and is skipped by the filter,
+    so only the two CVEs with CVSS v3.1 data are returned.
+    """
     payload = _make_nvd_response(sample_cves)
-    client = NVDClient()
+    client = NVDClient(cache_path=None)
 
     with patch.object(client, "_fetch_page", return_value=payload):
-        results = client.fetch_cves(days_back=7, max_results=10)
+        results = client.fetch_cves(max_results=10)
 
-    assert len(results) == 3
+    # Only the 2 CVEs that have cvssMetricV31 are returned
+    assert len(results) == 2
 
     rce = next(r for r in results if r["cve_id"] == "CVE-2024-21762")
     assert rce["cvss_v3_score"] == 9.8
@@ -73,32 +78,22 @@ def test_fetch_cves_returns_parsed_data(sample_cves):
 
 
 # ---------------------------------------------------------------------------
-# test_fetch_cves_handles_missing_cvss
+# test_fetch_cves_skips_missing_cvss
 # ---------------------------------------------------------------------------
 
 
-def test_fetch_cves_handles_missing_cvss(sample_cves):
-    """CVE with empty metrics block is parsed without crashing; CVSS fields are None."""
-    # third sample CVE has no metrics
+def test_fetch_cves_skips_missing_cvss(sample_cves):
+    """CVEs without cvssMetricV31 are silently skipped."""
     no_cvss_cve = [s for s in sample_cves if s["cve"]["id"] == "CVE-2024-45678"]
     assert no_cvss_cve, "sample data must include CVE-2024-45678"
 
     payload = _make_nvd_response(no_cvss_cve)
-    client = NVDClient()
+    client = NVDClient(cache_path=None)
 
     with patch.object(client, "_fetch_page", return_value=payload):
-        results = client.fetch_cves(days_back=7, max_results=5)
+        results = client.fetch_cves(max_results=5)
 
-    assert len(results) == 1
-    cve = results[0]
-    assert cve["cve_id"] == "CVE-2024-45678"
-    assert cve["cvss_v3_score"] is None
-    assert cve["cvss_v3_vector"] is None
-    assert cve["attack_vector"] is None
-    assert cve["confidentiality_impact"] is None
-    # Non-CVSS fields are still populated
-    assert cve["cwe_ids"] == ["CWE-200"]
-    assert len(cve["affected_products"]) == 2
+    assert results == []
 
 
 # ---------------------------------------------------------------------------
@@ -128,10 +123,10 @@ def test_fetch_cves_detects_exploit_references(sample_cves, references, expected
     cve_entry = json.loads(json.dumps(sample_cves[0]))  # deep copy
     cve_entry["cve"]["references"] = [{"url": u} for u in references]
     payload = _make_nvd_response([cve_entry])
-    client = NVDClient()
+    client = NVDClient(cache_path=None)
 
     with patch.object(client, "_fetch_page", return_value=payload):
-        results = client.fetch_cves(days_back=7, max_results=5)
+        results = client.fetch_cves(max_results=5)
 
     assert len(results) == 1
     assert results[0]["has_exploit_ref"] is expected
@@ -144,16 +139,11 @@ def test_fetch_cves_detects_exploit_references(sample_cves, references, expected
 
 def test_fetch_cves_retries_on_failure(sample_cves):
     """_fetch_page retries 3 times on HTTP errors, then returns None."""
-    client = NVDClient()
-    call_count = 0
-
-    def failing_get(url, params):  # noqa: ANN001
-        nonlocal call_count
-        call_count += 1
-        return _mock_httpx_response({}, status_code=503)
+    client = NVDClient(cache_path=None)
 
     with (
         patch("time.sleep"),  # suppress real sleeps
+        patch.object(client, "_api_reachable", return_value=True),
         patch("httpx.Client") as mock_client_cls,
     ):
         mock_http = MagicMock()
@@ -166,7 +156,7 @@ def test_fetch_cves_retries_on_failure(sample_cves):
         ]
         mock_client_cls.return_value = mock_http
 
-        results = client.fetch_cves(days_back=7, max_results=5)
+        results = client.fetch_cves(max_results=5)
 
     assert results == []
     assert mock_http.get.call_count == 3
@@ -175,10 +165,11 @@ def test_fetch_cves_retries_on_failure(sample_cves):
 def test_fetch_cves_succeeds_after_transient_failure(sample_cves):
     """_fetch_page succeeds on the third attempt after two transient failures."""
     payload = _make_nvd_response(sample_cves[:1])
-    client = NVDClient()
+    client = NVDClient(cache_path=None)
 
     with (
         patch("time.sleep"),
+        patch.object(client, "_api_reachable", return_value=True),
         patch("httpx.Client") as mock_client_cls,
     ):
         mock_http = MagicMock()
@@ -191,7 +182,7 @@ def test_fetch_cves_succeeds_after_transient_failure(sample_cves):
         ]
         mock_client_cls.return_value = mock_http
 
-        results = client.fetch_cves(days_back=7, max_results=5)
+        results = client.fetch_cves(max_results=5)
 
     assert len(results) == 1
     assert results[0]["cve_id"] == "CVE-2024-21762"

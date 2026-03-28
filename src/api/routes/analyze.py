@@ -72,8 +72,8 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
         exploit_probability=exploit_prob,
         risk_level=_risk_level(exploit_prob),
         shap_explanation=ShapExplanation(
-            top_positive_features=explanation["top_3_positive"],
-            top_negative_features=explanation["top_3_negative"],
+            top_positive_features=explanation["top_positive_features"],
+            top_negative_features=explanation["top_negative_features"],
         ),
     )
 

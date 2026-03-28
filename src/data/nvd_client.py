@@ -1,9 +1,10 @@
 """NIST NVD API 2.0 client for fetching and parsing CVE data."""
 
+import json
 import logging
 import time
 from collections import deque
-from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -15,6 +16,11 @@ RESULTS_PER_PAGE = 100
 MAX_REQUESTS = 5
 RATE_WINDOW_SECONDS = 30
 MAX_RETRIES = 3
+PAGE_SLEEP_SECONDS = 6
+
+_DEFAULT_CACHE_PATH = Path(__file__).resolve().parents[2] / "data" / "raw" / "cves_cache.json"
+_DEFAULT_RAW_DATA_PATH = Path(__file__).resolve().parents[2] / "scripts" / "raw_data.json"
+_API_CONNECT_TIMEOUT = 2.0  # seconds — fall back to file if server unreachable
 
 
 class NVDRateLimiter:
@@ -43,42 +49,93 @@ class NVDRateLimiter:
 class NVDClient:
     """Client for the NIST NVD CVE API 2.0."""
 
-    def __init__(self, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        timeout: float = 30.0,
+        cache_path: Path | str | None = _DEFAULT_CACHE_PATH,
+        raw_data_path: Path | str | None = _DEFAULT_RAW_DATA_PATH,
+    ) -> None:
         self._timeout = timeout
-        self._rate_limiter = NVDRateLimiter()
+        self._cache_path = Path(cache_path) if cache_path is not None else None
+        self._raw_data_path = Path(raw_data_path) if raw_data_path is not None else None
 
     # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------
 
-    def fetch_cves(self, days_back: int = 90, max_results: int = 500) -> list[dict[str, Any]]:
-        """Fetch CVEs modified within the last *days_back* days.
+    def fetch_cves(self, max_results: int = 500) -> list[dict[str, Any]]:
+        """Fetch CVEs with CVSS v3.1 data, using cache → API → raw file fallback.
+
+        Priority order:
+        1. Load from ``cache_path`` if it exists (skip network entirely).
+        2. Probe the NVD API with a 2-second connect timeout.  If it responds,
+           paginate and collect up to *max_results* CVEs with CVSS v3.1 data.
+        3. If the API does not respond within 2 seconds, parse ``raw_data.json``
+           from the scripts/ directory instead.
+
+        Results from step 2 or 3 are written to the cache for future runs.
 
         Args:
-            days_back: How many days back to query for last-modified CVEs.
-            max_results: Hard cap on the total number of CVEs returned.
+            max_results: Hard cap on CVEs returned (only those with CVSS v3.1).
 
         Returns:
             List of parsed CVE dicts.
         """
-        end_dt = datetime.now(tz=UTC)
-        start_dt = end_dt - timedelta(days=days_back)
-        start_iso = start_dt.strftime("%Y-%m-%dT%H:%M:%S.000")
-        end_iso = end_dt.strftime("%Y-%m-%dT%H:%M:%S.000")
+        # 1. Cache hit
+        if self._cache_path is not None and self._cache_path.exists():
+            logger.info("Loading CVEs from cache: %s", self._cache_path)
+            cached: list[dict[str, Any]] = json.loads(
+                self._cache_path.read_text(encoding="utf-8")
+            )
+            logger.info("Loaded %d CVEs from cache", len(cached))
+            return cached
 
-        logger.info(
-            "Fetching CVEs modified between %s and %s (max %d)",
-            start_iso,
-            end_iso,
-            max_results,
-        )
+        # 2. API (2-second probe first — fall back immediately if unreachable)
+        if self._api_reachable():
+            results = self._paginate_api(max_results)
+        else:
+            logger.warning(
+                "NVD API did not respond within %.0fs — loading from %s",
+                _API_CONNECT_TIMEOUT,
+                self._raw_data_path,
+            )
+            results = self._load_from_raw_file(max_results)
 
+        # 3. Save whatever we got to cache for next run
+        if results and self._cache_path is not None:
+            self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+            self._cache_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
+            logger.info("Cached %d CVEs → %s", len(results), self._cache_path)
+
+        return results
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    def _api_reachable(self) -> bool:
+        """Return True if the NVD API responds within *_API_CONNECT_TIMEOUT* seconds."""
+        try:
+            with httpx.Client(timeout=_API_CONNECT_TIMEOUT) as c:
+                c.get(NVD_API_URL, params={"resultsPerPage": 1, "startIndex": 0})
+            return True
+        except Exception:
+            return False
+
+    def _paginate_api(self, max_results: int) -> list[dict[str, Any]]:
+        """Paginate the NVD API and return CVEs with CVSS v3.1 data."""
+        logger.info("Fetching up to %d CVEs (CVSS v3.1 only) from NVD API", max_results)
         results: list[dict[str, Any]] = []
         start_index = 0
+        first_page = True
 
         with httpx.Client(timeout=self._timeout) as client:
             while len(results) < max_results:
-                page = self._fetch_page(client, start_iso, end_iso, start_index)
+                if not first_page:
+                    time.sleep(PAGE_SLEEP_SECONDS)
+                first_page = False
+
+                page = self._fetch_page(client, start_index)
                 if page is None:
                     break
 
@@ -94,7 +151,10 @@ class NVDClient:
                 for item in vulnerabilities:
                     if len(results) >= max_results:
                         break
-                    parsed = self._parse_cve(item.get("cve", {}))
+                    cve_obj = item.get("cve", {})
+                    if not cve_obj.get("metrics", {}).get("cvssMetricV31"):
+                        continue
+                    parsed = self._parse_cve(cve_obj)
                     if parsed:
                         results.append(parsed)
 
@@ -102,30 +162,46 @@ class NVDClient:
                 if start_index >= total_results or not vulnerabilities:
                     break
 
-        logger.info("Fetched %d CVEs total", len(results))
+        logger.info("Fetched %d CVEs with CVSS v3.1 from NVD API", len(results))
         return results
 
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
+    def _load_from_raw_file(self, max_results: int) -> list[dict[str, Any]]:
+        """Parse CVEs from ``raw_data.json``, keeping only CVSS v3.1 entries."""
+        if self._raw_data_path is None or not self._raw_data_path.exists():
+            logger.error("raw_data_path not set or file missing: %s", self._raw_data_path)
+            return []
+
+        logger.info("Parsing CVEs from raw data file: %s", self._raw_data_path)
+        feed = json.loads(self._raw_data_path.read_text(encoding="utf-8"))
+        vulnerabilities = feed.get("vulnerabilities", [])
+        logger.info("Raw file contains %d total entries", len(vulnerabilities))
+
+        results: list[dict[str, Any]] = []
+        for item in vulnerabilities:
+            if len(results) >= max_results:
+                break
+            cve_obj = item.get("cve", {})
+            if not cve_obj.get("metrics", {}).get("cvssMetricV31"):
+                continue
+            parsed = self._parse_cve(cve_obj)
+            if parsed:
+                results.append(parsed)
+
+        logger.info("Loaded %d CVEs with CVSS v3.1 from raw file", len(results))
+        return results
 
     def _fetch_page(
         self,
         client: httpx.Client,
-        start_iso: str,
-        end_iso: str,
         start_index: int,
     ) -> dict[str, Any] | None:
         """Fetch a single page from the NVD API with retry + backoff."""
         params = {
-            "lastModStartDate": start_iso,
-            "lastModEndDate": end_iso,
             "resultsPerPage": RESULTS_PER_PAGE,
             "startIndex": start_index,
         }
 
         for attempt in range(1, MAX_RETRIES + 1):
-            self._rate_limiter.wait()
             try:
                 response = client.get(NVD_API_URL, params=params)
                 response.raise_for_status()
