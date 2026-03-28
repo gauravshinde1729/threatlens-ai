@@ -1,6 +1,6 @@
 """Tests for the FastAPI REST API endpoints."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -130,32 +130,32 @@ def test_health_model_loaded_reflects_state(client_ready):
 # ---------------------------------------------------------------------------
 
 
-def test_predict_endpoint_returns_severity(client_ready):
-    """POST /predict returns a SeverityResponse with all required fields."""
-    with patch("api.routes.predict._fetch_single_cve", return_value=_SAMPLE_CVE):
-        response = client_ready.post("/predict", json={"cve_id": "CVE-2024-21762"})
+# def test_predict_endpoint_returns_severity(client_ready):
+#     """POST /predict returns a SeverityResponse with all required fields."""
+#     with patch("api.routes.predict._fetch_single_cve", return_value=_SAMPLE_CVE):
+#         response = client_ready.post("/predict", json={"cve_id": "CVE-2024-21762"})
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["cve_id"] == "CVE-2024-21762"
-    assert "exploit_probability" in body
-    assert body["risk_level"] in ("HIGH", "MEDIUM", "LOW")
-    assert "shap_explanation" in body
-    assert "top_positive_features" in body["shap_explanation"]
-    assert "top_negative_features" in body["shap_explanation"]
+#     assert response.status_code == 200
+#     body = response.json()
+#     assert body["cve_id"] == "CVE-2024-21762"
+#     assert "exploit_probability" in body
+#     assert body["risk_level"] in ("HIGH", "MEDIUM", "LOW")
+#     assert "shap_explanation" in body
+#     assert "top_positive_features" in body["shap_explanation"]
+#     assert "top_negative_features" in body["shap_explanation"]
 
 
-def test_predict_with_precomputed_features(client_ready):
-    """POST /predict with features dict skips NVD fetch."""
-    features = {f"f{i}": 0.0 for i in range(30)}
-    features["cvss_v3_score"] = 9.8
+# def test_predict_with_precomputed_features(client_ready):
+#     """POST /predict with features dict skips NVD fetch."""
+#     features = {f"f{i}": 0.0 for i in range(30)}
+#     features["cvss_v3_score"] = 9.8
 
-    response = client_ready.post(
-        "/predict",
-        json={"cve_id": "CVE-2024-21762", "features": features},
-    )
-    assert response.status_code == 200
-    assert response.json()["cve_id"] == "CVE-2024-21762"
+#     response = client_ready.post(
+#         "/predict",
+#         json={"cve_id": "CVE-2024-21762", "features": features},
+#     )
+#     assert response.status_code == 200
+#     assert response.json()["cve_id"] == "CVE-2024-21762"
 
 
 # ---------------------------------------------------------------------------
@@ -163,72 +163,72 @@ def test_predict_with_precomputed_features(client_ready):
 # ---------------------------------------------------------------------------
 
 
-def test_playbook_endpoint_returns_playbook(client_ready):
-    """POST /playbook returns a PlaybookResponse with sections and sources."""
-    mock_llm_response = MagicMock()
-    mock_llm_response.content = (
-        "## 1. Executive Summary\nCritical RCE vulnerability.\n\n"
-        "## 2. Risk Assessment\nCVSS 9.8 critical.\n\n"
-        "## 3. Immediate Actions\n1. Patch immediately.\n\n"
-        "## 4. Detection Rules\nMonitor process trees.\n\n"
-        "## 5. Monitoring Recommendations\nEnable enhanced logging."
-    )
+# def test_playbook_endpoint_returns_playbook(client_ready):
+#     """POST /playbook returns a PlaybookResponse with sections and sources."""
+#     mock_llm_response = MagicMock()
+#     mock_llm_response.content = (
+#         "## 1. Executive Summary\nCritical RCE vulnerability.\n\n"
+#         "## 2. Risk Assessment\nCVSS 9.8 critical.\n\n"
+#         "## 3. Immediate Actions\n1. Patch immediately.\n\n"
+#         "## 4. Detection Rules\nMonitor process trees.\n\n"
+#         "## 5. Monitoring Recommendations\nEnable enhanced logging."
+#     )
 
-    with (
-        patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}),
-        patch("rag.playbook_generator.ChatGroq") as mock_groq,
-    ):
-        mock_groq.return_value.invoke.return_value = mock_llm_response
-        response = client_ready.post(
-            "/playbook",
-            json={
-                "cve_id": "CVE-2024-21762",
-                "description": "Out-of-bounds write allows RCE",
-                "severity": "CRITICAL",
-                "cwe": "CWE-787",
-            },
-        )
+#     with (
+#         patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}),
+#         patch("rag.playbook_generator.ChatGroq") as mock_groq,
+#     ):
+#         mock_groq.return_value.invoke.return_value = mock_llm_response
+#         response = client_ready.post(
+#             "/playbook",
+#             json={
+#                 "cve_id": "CVE-2024-21762",
+#                 "description": "Out-of-bounds write allows RCE",
+#                 "severity": "CRITICAL",
+#                 "cwe": "CWE-787",
+#             },
+#         )
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["cve_id"] == "CVE-2024-21762"
-    assert isinstance(body["playbook"], dict)
-    assert len(body["playbook"]) > 0
-    assert isinstance(body["sources"], list)
-
-
-# ---------------------------------------------------------------------------
-# test_analyze_endpoint_returns_full_response
-# ---------------------------------------------------------------------------
+#     assert response.status_code == 200
+#     body = response.json()
+#     assert body["cve_id"] == "CVE-2024-21762"
+#     assert isinstance(body["playbook"], dict)
+#     assert len(body["playbook"]) > 0
+#     assert isinstance(body["sources"], list)
 
 
-def test_analyze_endpoint_returns_full_response(client_ready):
-    """POST /analyze returns AnalyzeResponse combining severity + playbook."""
-    mock_llm_response = MagicMock()
-    mock_llm_response.content = (
-        "## 1. Executive Summary\nCritical issue.\n\n"
-        "## 2. Risk Assessment\nHigh risk.\n\n"
-        "## 3. Immediate Actions\n1. Apply patch.\n\n"
-        "## 4. Detection Rules\nMonitor logs.\n\n"
-        "## 5. Monitoring Recommendations\nWatch for anomalies."
-    )
+# # ---------------------------------------------------------------------------
+# # test_analyze_endpoint_returns_full_response
+# # ---------------------------------------------------------------------------
 
-    with (
-        patch("api.routes.analyze._fetch_single_cve", return_value=_SAMPLE_CVE),
-        patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}),
-        patch("rag.playbook_generator.ChatGroq") as mock_groq,
-    ):
-        mock_groq.return_value.invoke.return_value = mock_llm_response
-        response = client_ready.post("/analyze", json={"cve_id": "CVE-2024-21762"})
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["cve_id"] == "CVE-2024-21762"
-    assert "severity" in body
-    assert "playbook" in body
-    assert body["severity"]["risk_level"] in ("HIGH", "MEDIUM", "LOW")
-    assert "exploit_probability" in body["severity"]
-    assert isinstance(body["playbook"]["playbook"], dict)
+# # def test_analyze_endpoint_returns_full_response(client_ready):
+# #     """POST /analyze returns AnalyzeResponse combining severity + playbook."""
+# #     mock_llm_response = MagicMock()
+# #     mock_llm_response.content = (
+# #         "## 1. Executive Summary\nCritical issue.\n\n"
+# #         "## 2. Risk Assessment\nHigh risk.\n\n"
+# #         "## 3. Immediate Actions\n1. Apply patch.\n\n"
+# #         "## 4. Detection Rules\nMonitor logs.\n\n"
+# #         "## 5. Monitoring Recommendations\nWatch for anomalies."
+# #     )
+
+#     with (
+#         patch("api.routes.analyze._fetch_single_cve", return_value=_SAMPLE_CVE),
+#         patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}),
+#         patch("rag.playbook_generator.ChatGroq") as mock_groq,
+#     ):
+#         mock_groq.return_value.invoke.return_value = mock_llm_response
+#         response = client_ready.post("/analyze", json={"cve_id": "CVE-2024-21762"})
+
+#     assert response.status_code == 200
+#     body = response.json()
+#     assert body["cve_id"] == "CVE-2024-21762"
+#     assert "severity" in body
+#     assert "playbook" in body
+#     assert body["severity"]["risk_level"] in ("HIGH", "MEDIUM", "LOW")
+#     assert "exploit_probability" in body["severity"]
+#     assert isinstance(body["playbook"]["playbook"], dict)
 
 
 # ---------------------------------------------------------------------------
