@@ -1,0 +1,59 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.ruff_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Environment variables
+.env
+
+# Data — raw and processed data are not version-controlled
+data/raw/
+data/processed/
+
+# Model artifacts
+*.joblib
+*.pkl
+*.pickle
+models/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Large binary formats
+*.parquet
+*.arrow
+*.feather
+*.h5
+*.hdf5
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

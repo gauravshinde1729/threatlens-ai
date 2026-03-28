@@ -1,0 +1,31 @@
+# RAG pipeline configuration
+# LLM provider: Groq (free inference tier)
+
+llm:
+  provider: "groq"
+  model: "llama-3.3-70b-versatile"
+  fallback_model: "mixtral-8x7b-32768"
+  temperature: 0.2
+  max_tokens: 2048
+
+embeddings:
+  model: "all-MiniLM-L6-v2"
+  device: "cpu"
+
+vector_store:
+  type: "faiss"
+  index_path: "data/processed/faiss_index"
+  similarity_metric: "cosine"
+
+chunking:
+  chunk_size: 500
+  chunk_overlap: 50
+  separators: ["\n\n", "\n", ". ", " "]
+
+retrieval:
+  top_k: 5
+  score_threshold: 0.3
+
+knowledge_base:
+  path: "data/knowledge_base/"
+  supported_formats: ["txt", "md", "pdf"]
