@@ -84,9 +84,7 @@ class NVDClient:
         # 1. Cache hit
         if self._cache_path is not None and self._cache_path.exists():
             logger.info("Loading CVEs from cache: %s", self._cache_path)
-            cached: list[dict[str, Any]] = json.loads(
-                self._cache_path.read_text(encoding="utf-8")
-            )
+            cached: list[dict[str, Any]] = json.loads(self._cache_path.read_text(encoding="utf-8"))
             logger.info("Loaded %d CVEs from cache", len(cached))
             return cached
 

@@ -4,7 +4,8 @@
       "Bash(python -c \"import fastapi, uvicorn; print\\(''fastapi ok''\\)\")",
       "Bash(python -c \"from models.severity_predictor import SeverityPredictor; from models.model_registry import ModelRegistry; print\\(''models ok''\\)\")",
       "Bash(python -c \"from data.preprocessor import _REQUIRED_COLUMNS; print\\(''feature cols:'', len\\(_REQUIRED_COLUMNS\\)\\)\")",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Skill(ship)"
     ]
   }
 }
