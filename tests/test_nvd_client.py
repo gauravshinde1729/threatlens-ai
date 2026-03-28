@@ -1,7 +1,6 @@
 """Tests for src/data/nvd_client.py."""
 
 import json
-import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -153,19 +152,21 @@ def test_fetch_cves_retries_on_failure(sample_cves):
         call_count += 1
         return _mock_httpx_response({}, status_code=503)
 
-    with patch("time.sleep"):  # suppress real sleeps
-        with patch("httpx.Client") as mock_client_cls:
-            mock_http = MagicMock()
-            mock_http.__enter__ = lambda s: mock_http
-            mock_http.__exit__ = MagicMock(return_value=False)
-            mock_http.get.side_effect = [
-                _mock_httpx_response({}, status_code=503),
-                _mock_httpx_response({}, status_code=503),
-                _mock_httpx_response({}, status_code=503),
-            ]
-            mock_client_cls.return_value = mock_http
+    with (
+        patch("time.sleep"),  # suppress real sleeps
+        patch("httpx.Client") as mock_client_cls,
+    ):
+        mock_http = MagicMock()
+        mock_http.__enter__ = lambda s: mock_http
+        mock_http.__exit__ = MagicMock(return_value=False)
+        mock_http.get.side_effect = [
+            _mock_httpx_response({}, status_code=503),
+            _mock_httpx_response({}, status_code=503),
+            _mock_httpx_response({}, status_code=503),
+        ]
+        mock_client_cls.return_value = mock_http
 
-            results = client.fetch_cves(days_back=7, max_results=5)
+        results = client.fetch_cves(days_back=7, max_results=5)
 
     assert results == []
     assert mock_http.get.call_count == 3
@@ -176,19 +177,21 @@ def test_fetch_cves_succeeds_after_transient_failure(sample_cves):
     payload = _make_nvd_response(sample_cves[:1])
     client = NVDClient()
 
-    with patch("time.sleep"):
-        with patch("httpx.Client") as mock_client_cls:
-            mock_http = MagicMock()
-            mock_http.__enter__ = lambda s: mock_http
-            mock_http.__exit__ = MagicMock(return_value=False)
-            mock_http.get.side_effect = [
-                _mock_httpx_response({}, status_code=503),
-                _mock_httpx_response({}, status_code=429),
-                _mock_httpx_response(payload, status_code=200),
-            ]
-            mock_client_cls.return_value = mock_http
+    with (
+        patch("time.sleep"),
+        patch("httpx.Client") as mock_client_cls,
+    ):
+        mock_http = MagicMock()
+        mock_http.__enter__ = lambda s: mock_http
+        mock_http.__exit__ = MagicMock(return_value=False)
+        mock_http.get.side_effect = [
+            _mock_httpx_response({}, status_code=503),
+            _mock_httpx_response({}, status_code=429),
+            _mock_httpx_response(payload, status_code=200),
+        ]
+        mock_client_cls.return_value = mock_http
 
-            results = client.fetch_cves(days_back=7, max_results=5)
+        results = client.fetch_cves(days_back=7, max_results=5)
 
     assert len(results) == 1
     assert results[0]["cve_id"] == "CVE-2024-21762"

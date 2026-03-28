@@ -1,6 +1,6 @@
 """Tests for drift_detector.py and performance_tracker.py."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,6 @@ import pytest
 
 from monitoring.drift_detector import DriftDetector
 from monitoring.performance_tracker import PerformanceTracker
-
 
 # ---------------------------------------------------------------------------
 # DriftDetector
@@ -154,7 +153,7 @@ def test_performance_tracker_multiple_predictions(tracker):
 
 def test_performance_tracker_time_window(tracker):
     """Predictions outside the time window are excluded from get_metrics()."""
-    old_ts = datetime.now(tz=timezone.utc) - timedelta(hours=48)
+    old_ts = datetime.now(tz=UTC) - timedelta(hours=48)
     tracker.log_prediction(
         cve_id="CVE-2024-OLD",
         prediction={"exploit_probability": 0.8, "risk_level": "HIGH"},

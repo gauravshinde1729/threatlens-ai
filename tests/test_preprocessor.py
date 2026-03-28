@@ -8,9 +8,9 @@ import pytest
 
 from data.nvd_client import NVDClient
 from data.preprocessor import (
+    _REQUIRED_COLUMNS,
     TOP_CWES,
     CVEPreprocessor,
-    _REQUIRED_COLUMNS,
     _compute_is_exploited,
 )
 

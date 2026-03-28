@@ -63,8 +63,8 @@ _SAMPLE_CVE = {
 @pytest.fixture()
 def client_no_model():
     """TestClient with no model or index loaded."""
-    from api.main import app
     import api.dependencies as deps
+    from api.main import app
 
     deps.app_state.model_loaded = False
     deps.app_state.index_loaded = False
@@ -78,8 +78,8 @@ def client_no_model():
 @pytest.fixture()
 def client_ready():
     """TestClient with mocked predictor and retriever loaded."""
-    from api.main import app
     import api.dependencies as deps
+    from api.main import app
 
     mock_predictor = _make_mock_predictor()
     mock_retriever = _make_mock_retriever()
@@ -128,8 +128,6 @@ def test_health_model_loaded_reflects_state(client_ready):
 
 def test_predict_endpoint_returns_severity(client_ready):
     """POST /predict returns a SeverityResponse with all required fields."""
-    from data.preprocessor import CVEPreprocessor
-
     with patch("api.routes.predict._fetch_single_cve", return_value=_SAMPLE_CVE):
         response = client_ready.post("/predict", json={"cve_id": "CVE-2024-21762"})
 
@@ -172,18 +170,20 @@ def test_playbook_endpoint_returns_playbook(client_ready):
         "## 5. Monitoring Recommendations\nEnable enhanced logging."
     )
 
-    with patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
-        with patch("rag.playbook_generator.ChatGroq") as mock_groq:
-            mock_groq.return_value.invoke.return_value = mock_llm_response
-            response = client_ready.post(
-                "/playbook",
-                json={
-                    "cve_id": "CVE-2024-21762",
-                    "description": "Out-of-bounds write allows RCE",
-                    "severity": "CRITICAL",
-                    "cwe": "CWE-787",
-                },
-            )
+    with (
+        patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}),
+        patch("rag.playbook_generator.ChatGroq") as mock_groq,
+    ):
+        mock_groq.return_value.invoke.return_value = mock_llm_response
+        response = client_ready.post(
+            "/playbook",
+            json={
+                "cve_id": "CVE-2024-21762",
+                "description": "Out-of-bounds write allows RCE",
+                "severity": "CRITICAL",
+                "cwe": "CWE-787",
+            },
+        )
 
     assert response.status_code == 200
     body = response.json()
@@ -209,11 +209,13 @@ def test_analyze_endpoint_returns_full_response(client_ready):
         "## 5. Monitoring Recommendations\nWatch for anomalies."
     )
 
-    with patch("api.routes.analyze._fetch_single_cve", return_value=_SAMPLE_CVE):
-        with patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
-            with patch("rag.playbook_generator.ChatGroq") as mock_groq:
-                mock_groq.return_value.invoke.return_value = mock_llm_response
-                response = client_ready.post("/analyze", json={"cve_id": "CVE-2024-21762"})
+    with (
+        patch("api.routes.analyze._fetch_single_cve", return_value=_SAMPLE_CVE),
+        patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}),
+        patch("rag.playbook_generator.ChatGroq") as mock_groq,
+    ):
+        mock_groq.return_value.invoke.return_value = mock_llm_response
+        response = client_ready.post("/analyze", json={"cve_id": "CVE-2024-21762"})
 
     assert response.status_code == 200
     body = response.json()

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 
-from data.preprocessor import TOP_CWES, _KEYWORD_PATTERNS
+from data.preprocessor import _KEYWORD_PATTERNS, TOP_CWES
 from models.model_registry import ModelRegistry
 from models.severity_predictor import SeverityPredictor
 

@@ -1,16 +1,13 @@
 """Tests for the RAG pipeline: KnowledgeBase, SecurityRetriever, PlaybookGenerator."""
 
-import pickle
 import textwrap
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from rag.knowledge_base import KnowledgeBase
 from rag.retriever import SecurityRetriever
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -218,30 +215,32 @@ Enable enhanced logging for 30 days post-patch.
 
     retriever = SecurityRetriever(built_kb)
 
-    with patch.dict("os.environ", {"GROQ_API_KEY": "test-key-123"}):
-        with patch("rag.playbook_generator.ChatGroq") as mock_groq_cls:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_response
-            mock_groq_cls.return_value = mock_llm
+    with (
+        patch.dict("os.environ", {"GROQ_API_KEY": "test-key-123"}),
+        patch("rag.playbook_generator.ChatGroq") as mock_groq_cls,
+    ):
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = mock_response
+        mock_groq_cls.return_value = mock_llm
 
-            generator = PlaybookGenerator(retriever)
-            cve = {
-                "cve_id": "CVE-2024-21762",
-                "description": "Remote code execution in FortiOS via crafted HTTP request.",
-                "cvss_v3_score": 9.8,
-                "attack_vector": "NETWORK",
-                "cwe_ids": ["CWE-787"],
-                "affected_products": ["cpe:2.3:o:fortinet:fortios:7.4.0"],
-                "has_exploit_ref": True,
-                "published_date": "2024-02-09T00:00:00.000",
-            }
-            ml_prediction = {
-                "exploit_probability": 0.92,
-                "predicted_label": 1,
-                "confidence": "high",
-            }
-            docs = retriever.retrieve_for_cve(cve, top_k=3)
-            result = generator.generate(cve, ml_prediction, docs)
+        generator = PlaybookGenerator(retriever)
+        cve = {
+            "cve_id": "CVE-2024-21762",
+            "description": "Remote code execution in FortiOS via crafted HTTP request.",
+            "cvss_v3_score": 9.8,
+            "attack_vector": "NETWORK",
+            "cwe_ids": ["CWE-787"],
+            "affected_products": ["cpe:2.3:o:fortinet:fortios:7.4.0"],
+            "has_exploit_ref": True,
+            "published_date": "2024-02-09T00:00:00.000",
+        }
+        ml_prediction = {
+            "exploit_probability": 0.92,
+            "predicted_label": 1,
+            "confidence": "high",
+        }
+        docs = retriever.retrieve_for_cve(cve, top_k=3)
+        result = generator.generate(cve, ml_prediction, docs)
 
     assert result["cve_id"] == "CVE-2024-21762"
     assert isinstance(result["playbook"], str)
@@ -288,7 +287,7 @@ def test_knowledge_base_save_and_load_index_roundtrip(kb_dir, tmp_path):
     results_after = kb_load.search("sql injection parameterized", top_k=3)
 
     assert len(results_before) == len(results_after)
-    for r_before, r_after in zip(results_before, results_after):
+    for r_before, r_after in zip(results_before, results_after, strict=True):
         assert r_before["source_file"] == r_after["source_file"]
         assert r_before["chunk_index"] == r_after["chunk_index"]
         assert abs(r_before["similarity_score"] - r_after["similarity_score"]) < 1e-4

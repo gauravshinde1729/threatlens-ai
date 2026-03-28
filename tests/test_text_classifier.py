@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from models.text_classifier import CATEGORIES, CVETextClassifier, _EMBEDDING_DIM
+from models.text_classifier import _EMBEDDING_DIM, CATEGORIES, CVETextClassifier
 
 # ---------------------------------------------------------------------------
 # Synthetic training data — 20 descriptions with known categories
@@ -124,7 +124,7 @@ def test_predict_proba_argmax_matches_predict(classifier):
     proba = classifier.predict_proba(descriptions)
     preds = classifier.predict(descriptions)
 
-    for i, (p, pred) in enumerate(zip(proba, preds)):
+    for i, (p, pred) in enumerate(zip(proba, preds, strict=True)):
         expected_idx = CATEGORIES.index(pred)
         assert np.argmax(p) == expected_idx, (
             f"Row {i}: argmax={np.argmax(p)} ({CATEGORIES[np.argmax(p)]!r}) "
