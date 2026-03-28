@@ -34,11 +34,11 @@ class PlaybookRequest(BaseModel):
 
 
 class ShapExplanation(BaseModel):
-    top_positive_features: list[tuple[str, float]] = Field(
-        description="Features pushing toward exploitation risk (name, shap_value)"
+    top_positive_features: list[str] = Field(
+        description="Feature names pushing toward exploitation risk (highest mean SHAP)"
     )
-    top_negative_features: list[tuple[str, float]] = Field(
-        description="Features pushing against exploitation risk (name, shap_value)"
+    top_negative_features: list[str] = Field(
+        description="Feature names pushing against exploitation risk (most negative mean SHAP)"
     )
 
 

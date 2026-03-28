@@ -146,11 +146,11 @@ class SeverityPredictor:
 
         # Top 3 features pushing toward exploitation (highest positive mean SHAP)
         pos_idx = np.argsort(mean_shap)[::-1][:3]
-        top_positive = [(feature_names[i], float(mean_shap[i])) for i in pos_idx]
+        top_positive = [feature_names[i] for i in pos_idx]
 
         # Top 3 features pushing against exploitation (most negative mean SHAP)
         neg_idx = np.argsort(mean_shap)[:3]
-        top_negative = [(feature_names[i], float(mean_shap[i])) for i in neg_idx]
+        top_negative = [feature_names[i] for i in neg_idx]
 
         return {
             "shap_values": values_cls1,

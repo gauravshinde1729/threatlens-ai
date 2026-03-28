@@ -70,12 +70,12 @@ def client_no_model():
     import api.dependencies as deps
     from api.main import app
 
-    deps.app_state.model_loaded = False
-    deps.app_state.index_loaded = False
-    deps.app_state.predictor = None
-    deps.app_state.retriever = None
-
     with TestClient(app, raise_server_exceptions=False) as c:
+        # Override AFTER lifespan startup so _load_model/_load_index don't win
+        deps.app_state.model_loaded = False
+        deps.app_state.index_loaded = False
+        deps.app_state.predictor = None
+        deps.app_state.retriever = None
         yield c
 
 
