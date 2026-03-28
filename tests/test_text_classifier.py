@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import torch
 
 from models.text_classifier import _EMBEDDING_DIM, CATEGORIES, CVETextClassifier
 
@@ -57,8 +58,10 @@ _TRAIN_LABELS = (
 @pytest.fixture(scope="module")
 def classifier() -> CVETextClassifier:
     """Shared fitted classifier — loading the model once per test module."""
+    torch.manual_seed(42)
+    np.random.seed(42)
     clf = CVETextClassifier()
-    clf.fit(_TRAIN_DESCRIPTIONS, _TRAIN_LABELS, epochs=10)
+    clf.fit(_TRAIN_DESCRIPTIONS, _TRAIN_LABELS, epochs=50)
     return clf
 
 
